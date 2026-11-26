@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Graan &amp; Zo · Planning</title>
+  <style>
+:root {
+  --bg: #f8fafc; --card: #fff; --line: #e2e8f0; --text: #0f172a; --muted: #64748b;
+  --blue: #2f7bd0; --blue-d: #2567b0; --blue-l: #e8f1fb;
+  --green: #16a34a; --green-l: #dcfce7; --red: #dc2626; --red-l: #fee2e2; --orange: #ea580c; --orange-l: #ffedd5;
+  --radius: 12px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+button, input, select, textarea { font: inherit; color: inherit; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+.wrap.narrow { max-width: 760px; }
+.wrap.wide { max-width: 1500px; }
+
+/* topbar */
+.topbar { background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20; }
+.topbar .in { max-width: 1500px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.brand { font-weight: 700; margin-right: 8px; }
+.topbar nav { display: flex; gap: 4px; flex-wrap: wrap; flex: 1; }
+.topbar nav a { padding: 6px 12px; border-radius: 8px; color: var(--muted); text-decoration: none; }
+.topbar nav a.on { background: var(--blue-l); color: var(--blue-d); font-weight: 600; }
+.topbar .who { color: var(--muted); font-size: 14px; }
+
+h1 { font-size: 28px; margin: 4px 0 2px; }
+h2 { font-size: 18px; margin: 24px 0 10px; }
+.sub { color: var(--muted); margin: 0 0 16px; }
+.crumbs { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
+.crumbs a { color: var(--muted); text-decoration: none; }
+
+/* controls */
+.btn { border: 1px solid var(--line); background: #fff; padding: 8px 14px; border-radius: 9px; cursor: pointer; }
+.btn:hover { background: #f1f5f9; }
+.btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; font-weight: 600; }
+.btn.primary:hover { background: var(--blue-d); }
+.btn.danger { color: var(--red); border-color: #fecaca; }
+.btn.ok { color: var(--green); border-color: #bbf7d0; }
+.btn.sm { padding: 4px 10px; font-size: 13px; }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+input, select, textarea { border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; background: #fff; max-width: 100%; }
+input[type=time], input[type=number] { width: 110px; }
+label.f { display: block; margin: 10px 0 4px; font-size: 13px; color: var(--muted); }
+label.f + input, label.f + select, label.f + textarea { width: 100%; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.row.between { justify-content: space-between; }
+.grow { flex: 1; }
+
+/* cards */
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+.card + .card { margin-top: 12px; }
+.card.red { border-color: #fecaca; }
+.pill { display: inline-block; font-size: 12px; padding: 2px 9px; border-radius: 99px; background: #f1f5f9; color: var(--muted); border: 1px solid var(--line); }
+.pill.blue { background: var(--blue-l); color: var(--blue-d); border-color: #cfe2f6; }
+.pill.green { background: var(--green-l); color: #166534; border-color: #bbf7d0; }
+.pill.red { background: var(--red-l); color: #991b1b; border-color: #fecaca; }
+.pill.orange { background: var(--orange-l); color: #9a3412; border-color: #fed7aa; }
+.shift { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.shift .time { font-size: 20px; font-weight: 600; }
+.shift .meta { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 14px; }
+.day-h { font-size: 17px; font-weight: 600; margin: 22px 0 10px; text-transform: capitalize; }
+.empty { color: var(--muted); text-align: center; padding: 28px 0; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.tile { text-decoration: none; color: inherit; }
+.tile .card:hover { border-color: var(--blue); }
+
+/* weeknav */
+.weeknav { display: flex; align-items: center; gap: 0; border: 1px solid var(--line); border-radius: 9px; background: #fff; overflow: hidden; }
+.weeknav button { border: 0; background: #fff; padding: 8px 12px; cursor: pointer; border-right: 1px solid var(--line); }
+.weeknav button:hover { background: #f1f5f9; }
+.weeknav .label { padding: 8px 14px; border-right: 1px solid var(--line); }
+.weeknav button:last-child { border-right: 0; }
+
+/* grid (rooster / beschikbaarheid) */
+.gridwrap { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); overflow-x: auto; }
+table.grid { border-collapse: collapse; width: 100%; min-width: 900px; table-layout: fixed; }
+table.grid th, table.grid td { border: 1px solid var(--line); vertical-align: top; padding: 4px; }
+table.grid thead th { background: #fff; font-weight: 600; text-align: center; padding: 10px 4px; }
+table.grid th.name, table.grid td.name { width: 170px; text-align: left; background: #fff; }
+table.grid td.today, table.grid th.today { background: #f1f5f9; }
+.person { display: flex; gap: 8px; align-items: center; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: #a78bfa; color: #fff; font-size: 12px; font-weight: 600; display: grid; place-items: center; flex: none; }
+.person small { color: var(--muted); display: block; }
+.chip { display: block; width: 100%; text-align: left; border: 1px solid var(--line); border-left: 4px solid var(--blue); background: #fff; border-radius: 7px; padding: 5px 7px; margin: 2px 0; font-size: 13px; cursor: pointer; }
+.chip.draft { border-left-color: #94a3b8; border-style: dashed; border-left-style: solid; }
+.chip small { display: block; color: var(--muted); }
+.chip.w { border-left-color: #0ea5e9; } .chip.r { border-left-color: #f59e0b; } .chip.m { border-left-color: #8b5cf6; }
+.avail { border-radius: 6px; font-size: 12px; text-align: center; padding: 6px 2px; margin: 2px; }
+.avail.beschikbaar, .avail.deels { background: var(--green-l); color: #166534; }
+.avail.niet { background: var(--red-l); color: var(--red); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin: 2px 4px; }
+.dot.beschikbaar, .dot.deels { background: var(--green); } .dot.niet { background: var(--red); }
+.addbtn { border: 1px dashed var(--line); background: transparent; border-radius: 7px; width: 100%; color: var(--muted); cursor: pointer; padding: 3px; font-size: 13px; }
+.addbtn:hover { border-color: var(--blue); color: var(--blue); }
+.cell { min-height: 54px; }
+
+/* uren */
+table.tbl { width: 100%; border-collapse: collapse; }
+table.tbl th { text-align: left; color: var(--muted); font-weight: 500; font-size: 13px; padding: 8px; }
+table.tbl td { padding: 8px; border-top: 1px solid var(--line); vertical-align: middle; }
+.tabs { display: inline-flex; background: #eef2f7; border-radius: 10px; padding: 3px; }
+.tabs button { border: 0; background: transparent; padding: 6px 14px; border-radius: 8px; cursor: pointer; color: var(--muted); }
+.tabs button.on { background: #fff; color: var(--text); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.dayhead { background: #e2e8f0; border-radius: var(--radius) var(--radius) 0 0; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
+.daybox { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 16px; overflow: hidden; }
+.daybox .body { padding: 0 8px 8px; }
+.note { font-size: 12px; color: var(--muted); }
+.ingest { font-size: 12px; } .ingest.ok { color: var(--green); } .ingest.no { color: var(--red); }
+
+/* modal + toast */
+.overlay { position: fixed; inset: 0; background: rgba(15,23,42,.45); display: grid; place-items: center; z-index: 50; padding: 16px; }
+.modal { background: #fff; border-radius: 14px; width: 100%; max-width: 520px; max-height: 90vh; overflow: auto; padding: 20px; }
+.modal h3 { margin: 0 0 6px; font-size: 18px; }
+.modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.arow { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+#toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 10px 16px; border-radius: 10px; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 60; max-width: 90vw; }
+#toast.show { opacity: 1; } #toast.err { background: var(--red); }
+
+.login { max-width: 360px; margin: 12vh auto; }
+.clock { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: space-between; }
+.clock .big { font-size: 22px; font-weight: 600; }
+.err-text { color: var(--red); margin-top: 10px; }
+.hide-print { }
+@media print {
+  .topbar, .hide-print, #toast { display: none !important; }
+  body { background: #fff; } .wrap { max-width: none; padding: 0; }
+  .gridwrap { border: 0; } table.grid { min-width: 0; }
+}
+@media (max-width: 640px) { h1 { font-size: 24px; } .two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="modal-root"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const __config_js = (() => {
+// Publieke gegevens van het Supabase-project "graanenzo-app".
+// De publishable key mag in de browser staan; de toegang wordt bewaakt door RLS in de database.
+const SUPABASE_URL = 'https://gxlbqxdloucaisnxmpky.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_1GtIrj9YZq1nuI206Fztfg_cod8_0e1';
+
+// Medewerkers loggen in met hun gebruikersnaam; dat wordt dit e-mailadres.
+const LOGIN_EMAIL = (gebruikersnaam) => `medewerker+${gebruikersnaam}@graanenzo.nl`;
+
+return { SUPABASE_URL, SUPABASE_KEY, LOGIN_EMAIL };
+})();
+
+const __lib_js = (() => {
+const { SUPABASE_URL, SUPABASE_KEY } = __config_js;
+
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Gedeelde staat: ingelogde sessie, eigen medewerkersprofiel en alle medewerkers
+const ctx = { session: null, me: null, mw: [] };
+const isAdmin = () => ctx.me?.rol === 'beheerder';
+
+const AFD = { winkel: 'Winkel', restaurant: 'Restaurant', magazijn: 'Magazijn' };
+const AFD_LANG = { winkel: 'Graanenzo Winkel', restaurant: 'Graanenzo Restaurant', magazijn: 'Graanenzo Magazijn' };
+const AFD_KLASSE = { winkel: 'w', restaurant: 'r', magazijn: 'm' };
+const DAGEN = ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];
+
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// ---------- datums (alles in Europe/Amsterdam) ----------
+const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Amsterdam' });
+const parse = (iso) => new Date(iso + 'T12:00:00Z');
+const addDays = (iso, n) => { const d = parse(iso); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const mondayOf = (iso) => { const d = parse(iso); return addDays(iso, -((d.getUTCDay() + 6) % 7)); };
+const weekDays = (monday) => Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+const fmtDay = (iso) => parse(iso).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+const fmtShort = (iso) => parse(iso).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+const fmtRange = (monday) => {
+  const e = addDays(monday, 6);
+  const o = { day: 'numeric', month: 'long', timeZone: 'UTC' };
+  return `${parse(monday).toLocaleDateString('nl-NL', { day: 'numeric', timeZone: 'UTC' })} - ${parse(e).toLocaleDateString('nl-NL', { ...o, year: 'numeric' })}`;
+};
+const weekNr = (iso) => {
+  const d = parse(iso); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d - y0) / 86400000 + 1) / 7);
+};
+const hhmm = (t) => (t ? String(t).slice(0, 5) : '');
+const tsTime = (ts) => (ts ? new Date(ts).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' }) : '');
+const tsTimeSec = (ts) => (ts ? new Date(ts).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/Amsterdam' }) : '');
+
+// "13:00" op een Amsterdamse datum -> ISO-tijdstip
+function amsToISO(datum, tijd) {
+  const guess = new Date(`${datum}T${tijd}:00Z`);
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Amsterdam', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).formatToParts(guess).map((x) => [x.type, x.value]));
+  const asUtc = Date.UTC(+p.year, +p.month - 1, +p.day, p.hour === '24' ? 0 : +p.hour, +p.minute, +p.second);
+  return new Date(guess.getTime() - (asUtc - guess.getTime())).toISOString();
+}
+
+const minutes = (start, eind, pauze = 0) => {
+  const m = (t) => { const [h, mi] = hhmm(t).split(':').map(Number); return h * 60 + mi; };
+  return Math.max(0, m(eind) - m(start) - (pauze || 0));
+};
+const fmtUren = (min) => `${(Math.round(min / 15) / 4).toString().replace('.', ',')}`;
+const tsMinutes = (r) => (r.uit_tijd ? Math.max(0, Math.round((new Date(r.uit_tijd) - new Date(r.in_tijd)) / 60000) - (r.pauze_minuten || 0)) : 0);
+
+const naamVan = (id) => ctx.mw.find((m) => m.id === id)?.naam ?? '?';
+const initialen = (naam) => naam.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+const mijnAfdelingen = () => (isAdmin() ? Object.keys(AFD) : ctx.me?.afdelingen ?? []);
+
+// ---------- ui ----------
+let toastTimer;
+function toast(msg, fout = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'show' + (fout ? ' err' : '');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => (el.className = ''), fout ? 5000 : 2200);
+}
+
+// Voert een actie uit en toont een foutmelding in plaats van te crashen
+async function act(fn) {
+  try { return await fn(); } catch (e) { console.error(e); toast(e.message || String(e), true); return undefined; }
+}
+function check({ data, error }) { if (error) throw new Error(error.message); return data; }
+
+function openModal(html, mount) {
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="overlay"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
+  const overlay = root.firstElementChild;
+  const close = () => { root.innerHTML = ''; document.removeEventListener('keydown', onKey); };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) close(); });
+  root.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', close));
+  mount?.(root.querySelector('.modal'), close);
+  return close;
+}
+
+const weekNav = (monday) => `
+  <div class="weeknav hide-print">
+    <button data-nav="-1" aria-label="Vorige week">‹</button>
+    <span class="label">${fmtRange(monday)}</span>
+    <button data-nav="0" title="Deze week">Vandaag</button>
+    <button data-nav="1" aria-label="Volgende week">›</button>
+  </div>`;
+
+function bindWeekNav(root, state, reload) {
+  root.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('click', () => {
+    const n = +b.dataset.nav;
+    state.monday = n === 0 ? mondayOf(today()) : addDays(state.monday, 7 * n);
+    reload();
+  }));
+}
+
+const afdOptions = (selected, metAlle = false) =>
+  (metAlle ? `<option value="">Alle afdelingen</option>` : '') +
+  mijnAfdelingen().map((a) => `<option value="${a}" ${a === selected ? 'selected' : ''}>${AFD[a]}</option>`).join('');
+
+function downloadCsv(naam, rijen) {
+  const csv = rijen.map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = naam; a.click(); URL.revokeObjectURL(a.href);
+}
+
+return { sb, ctx, isAdmin, AFD, AFD_LANG, AFD_KLASSE, DAGEN, esc, today, addDays, mondayOf, weekDays, fmtDay, fmtShort, fmtRange, weekNr, hhmm, tsTime, tsTimeSec, amsToISO, minutes, fmtUren, tsMinutes, naamVan, initialen, mijnAfdelingen, toast, act, check, openModal, weekNav, bindWeekNav, afdOptions, downloadCsv };
+})();
+
+const __views_open_js = (() => {
+const { sb, ctx, isAdmin, esc, act, check, toast, today, addDays, fmtDay, hhmm, minutes, AFD, AFD_LANG, afdOptions } = __lib_js;
+
+const state = { alleenMijn: false, afd: '' };
+
+async function openShiftsView(el) {
+  const van = today();
+  const shifts = check(await sb.rpc('shifts_met_bezetting', { p_van: van, p_tot: addDays(van, 90) }));
+
+  const zichtbaar = shifts.filter((s) =>
+    (!state.afd || s.afdeling === state.afd) &&
+    (state.alleenMijn ? s.mijn_status : isAdmin() || true));
+
+  const perDag = new Map();
+  zichtbaar.forEach((s) => perDag.set(s.datum, [...(perDag.get(s.datum) ?? []), s]));
+
+  const mijnAantal = shifts.filter((s) => s.mijn_status).length;
+  el.innerHTML = `<div class="wrap narrow">
+    <div class="crumbs"><a href="#/">Dashboard</a> › Open shifts</div>
+    <h1>Open shifts</h1><p class="sub">Claim beschikbare open shifts. Een beheerder keurt je aanmelding goed.</p>
+    <div class="row">
+      <label class="btn row" style="gap:8px;cursor:pointer"><input type="checkbox" id="mijn" ${state.alleenMijn ? 'checked' : ''}> Mijn geclaimde shifts (${mijnAantal})</label>
+      <select id="afd">${afdOptions(state.afd, true)}</select>
+    </div>
+    ${perDag.size ? [...perDag].map(([datum, lijst]) => `
+      <div class="day-h">${esc(fmtDay(datum))}</div>
+      ${lijst.map(kaart).join('')}`).join('') : `<div class="card empty" style="margin-top:20px">${state.alleenMijn ? 'Je hebt nog geen shifts geclaimd.' : 'Er zijn geen open shifts.'}</div>`}
+    <p class="note" style="text-align:center;margin-top:28px">Alle open shifts zijn geladen</p>
+  </div>`;
+
+  el.querySelector('#mijn').addEventListener('change', (e) => { state.alleenMijn = e.target.checked; openShiftsView(el); });
+  el.querySelector('#afd').addEventListener('change', (e) => { state.afd = e.target.value; openShiftsView(el); });
+  el.querySelectorAll('[data-claim]').forEach((b) => b.addEventListener('click', () => act(async () => {
+    b.disabled = true;
+    check(await sb.rpc('shift_aanmelden', { p_shift_id: b.dataset.claim }));
+    toast('Aangemeld. Wacht op goedkeuring van de beheerder.'); openShiftsView(el);
+  }).finally(() => { b.disabled = false; })));
+  el.querySelectorAll('[data-intrekken]').forEach((b) => b.addEventListener('click', () => act(async () => {
+    check(await sb.rpc('shift_intrekken', { p_shift_id: b.dataset.intrekken }));
+    toast('Aanmelding ingetrokken'); openShiftsView(el);
+  })));
+}
+
+function kaart(s) {
+  const vrij = s.plekken - s.bezet;
+  const uren = minutes(s.start_tijd, s.eind_tijd, s.pauze_minuten);
+  let rechts = '';
+  let status = '';
+  if (s.mijn_status === 'goedgekeurd') {
+    status = '<span class="pill green">Jij werkt deze shift</span>';
+  } else if (s.mijn_status === 'aangemeld') {
+    status = '<span class="pill orange">Wacht op goedkeuring</span>';
+    rechts = `<button class="btn" data-intrekken="${s.id}">Intrekken</button>`;
+  } else if (s.mijn_status === 'afgekeurd') {
+    rechts = vrij > 0 ? `<button class="btn primary" data-claim="${s.id}">Opnieuw claimen</button>` : '';
+    status = `<span class="pill red">Afgekeurd</span>${vrij <= 0 ? '<span class="pill">Volledig bezet</span>' : ''}`;
+  } else if (vrij <= 0) {
+    status = '<span class="pill">Volledig bezet</span>';
+  } else if (s.gepubliceerd) {
+    status = `<span class="pill blue">${vrij} ${vrij === 1 ? 'plek' : 'plekken'} beschikbaar</span>`;
+    rechts = `<button class="btn primary" data-claim="${s.id}" style="min-width:150px">Claimen</button>`;
+  }
+  return `<div class="card shift ${s.mijn_status === 'afgekeurd' ? 'red' : ''}">
+    <div><div class="time">${hhmm(s.start_tijd)} - ${hhmm(s.eind_tijd)}</div>
+      <div class="meta"><span class="pill">${s.pauze_minuten} min pauze</span><span class="pill">${fmtUrenKort(uren)} uur</span>${!s.gepubliceerd ? '<span class="pill orange">Concept</span>' : ''}</div>
+      <div class="meta"><span>📍 ${AFD_LANG[s.afdeling]}</span>${status}</div>
+      ${s.titel || s.opmerking ? `<div class="meta">${esc([s.titel, s.opmerking].filter(Boolean).join(' · '))}</div>` : ''}
+    </div>${rechts}</div>`;
+}
+
+const fmtUrenKort = (min) => (Math.round(min / 15) / 4).toString().replace('.', ',');
+
+return { openShiftsView };
+})();
+
+const __views_rooster_js = (() => {
+const { sb, ctx, isAdmin, esc, act, check, toast, today, mondayOf, addDays, weekDays, DAGEN, hhmm, minutes, fmtUren, fmtDay, fmtRange, weekNr, weekNav, bindWeekNav, openModal, naamVan, initialen, AFD, AFD_KLASSE, afdOptions, downloadCsv, } = __lib_js;
+
+const state = { monday: mondayOf(today()), afd: '' };
+
+async function roosterView(el) {
+  const dagen = weekDays(state.monday);
+  const admin = isAdmin();
+  const [shifts, diensten, beschik] = await Promise.all([
+    sb.rpc('shifts_met_bezetting', { p_van: dagen[0], p_tot: dagen[6] }),
+    sb.from('diensten').select('*').gte('datum', dagen[0]).lte('datum', dagen[6]).order('start_tijd'),
+    admin ? sb.from('beschikbaarheid').select('*').gte('datum', dagen[0]).lte('datum', dagen[6]) : { data: [], error: null },
+  ]);
+  const S = check(shifts).filter((s) => !state.afd || s.afdeling === state.afd);
+  const D = check(diensten).filter((d) => !state.afd || d.afdeling === state.afd);
+  const B = check(beschik);
+
+  const dienstMin = D.reduce((n, d) => n + minutes(d.start_tijd, d.eind_tijd, d.pauze_minuten), 0);
+  const openMin = S.reduce((n, s) => n + Math.max(0, s.plekken - s.bezet) * minutes(s.start_tijd, s.eind_tijd, s.pauze_minuten), 0);
+  const concept = S.filter((s) => !s.gepubliceerd).length + D.filter((d) => !d.gepubliceerd).length;
+
+  const mensen = ctx.mw.filter((m) => m.actief && (admin ? (!state.afd || m.afdelingen.includes(state.afd)) : D.some((d) => d.medewerker_id === m.id)));
+
+  const shiftChip = (s) => {
+    const vol = s.bezet >= s.plekken;
+    return `<button class="chip ${AFD_KLASSE[s.afdeling]} ${s.gepubliceerd ? '' : 'draft'}" data-shift="${s.id}">
+      ${hhmm(s.start_tijd)} - ${hhmm(s.eind_tijd)}
+      <small>${AFD[s.afdeling]} · <b style="color:${vol ? 'var(--green)' : 'var(--orange)'}">${s.bezet}/${s.plekken}</b>${s.aangemeld ? ` · <b style="color:var(--blue-d)">${s.aangemeld} aanvr.</b>` : ''}${s.gepubliceerd ? '' : ' · concept'}</small></button>`;
+  };
+  const dienstChip = (d) => `<button class="chip ${AFD_KLASSE[d.afdeling]} ${d.gepubliceerd ? '' : 'draft'}" data-dienst="${d.id}" ${admin ? '' : 'style="cursor:default"'}>
+      ${hhmm(d.start_tijd)} - ${hhmm(d.eind_tijd)}<small>${AFD[d.afdeling]}${d.gepubliceerd ? '' : ' · concept'}</small></button>`;
+
+  const kop = dagen.map((d, i) => `<th class="${d === today() ? 'today' : ''}">${DAGEN[i]} ${+d.slice(8)}</th>`).join('');
+  const openRij = admin ? `<tr><td class="name"><div class="person"><span class="avatar" style="background:#e2e8f0;color:#475569">👥</span><div><b>Open shifts</b><small>${S.filter((s) => s.bezet < s.plekken).length} open</small></div></div></td>
+    ${dagen.map((d) => `<td class="${d === today() ? 'today' : ''}"><div class="cell">${S.filter((s) => s.datum === d).map(shiftChip).join('')}
+      <button class="addbtn hide-print" data-nieuw="${d}" title="Shift toevoegen">+</button></div></td>`).join('')}</tr>` : '';
+
+  const persoonRij = (m) => {
+    const mijnD = D.filter((d) => d.medewerker_id === m.id);
+    const min = mijnD.reduce((n, d) => n + minutes(d.start_tijd, d.eind_tijd, d.pauze_minuten), 0);
+    return `<tr><td class="name"><div class="person"><span class="avatar">${initialen(m.naam)}</span><div>${esc(m.naam)}<small>${fmtUren(min)} u</small></div></div></td>
+      ${dagen.map((d) => {
+        const b = B.find((x) => x.medewerker_id === m.id && x.datum === d);
+        return `<td class="${d === today() ? 'today' : ''}"><div class="cell">${b ? `<span class="dot ${b.status}" title="${b.status === 'deels' ? `${hhmm(b.van)} - ${hhmm(b.tot)}` : b.status}"></span>` : ''}
+          ${mijnD.filter((x) => x.datum === d).map(dienstChip).join('')}
+          ${admin ? `<button class="addbtn hide-print" data-persoon="${m.id}" data-datum="${d}" title="Dienst toevoegen">+</button>` : ''}</div></td>`;
+      }).join('')}</tr>`;
+  };
+
+  el.innerHTML = `<div class="wrap wide">
+    <div class="crumbs hide-print"><a href="#/">Dashboard</a> › ${admin ? 'Rooster maken' : 'Rooster'}</div>
+    <div class="row between" style="margin-bottom:12px">
+      <div><h1>${admin ? 'Rooster maken' : 'Rooster'} <span class="pill">Week ${weekNr(state.monday)}</span></h1><p class="sub" style="margin:0">${fmtRange(state.monday)}</p></div>
+      <div class="row">
+        <select id="afd" class="hide-print">${afdOptions(state.afd, true)}</select>
+        ${weekNav(state.monday)}
+      </div></div>
+    <div class="row between hide-print" style="margin-bottom:10px">
+      <div><b>${fmtUren(dienstMin)} uur</b> ingepland${admin ? ` · <span class="note">${fmtUren(openMin)} uur open</span>` : ''}</div>
+      ${admin ? `<div class="row">
+        <button class="btn" id="kopieer">Vorige week kopiëren</button>
+        <button class="btn primary" id="publiceer" ${concept ? '' : 'disabled'}>Publiceren${concept ? ` (${concept})` : ''}</button>
+        <button class="btn" id="print">Afdrukken</button>
+        <button class="btn" id="csv">CSV</button></div>` : ''}
+    </div>
+    <div class="gridwrap"><table class="grid"><thead><tr><th class="name"></th>${kop}</tr></thead>
+      <tbody>${openRij}${mensen.map(persoonRij).join('')}</tbody></table></div>
+    ${!admin && !mensen.length ? '<div class="empty">Er zijn deze week nog geen diensten gepubliceerd.</div>' : ''}
+  </div>`;
+
+  const herlaad = () => roosterView(el);
+  bindWeekNav(el, state, herlaad);
+  el.querySelector('#afd').addEventListener('change', (e) => { state.afd = e.target.value; herlaad(); });
+  if (!admin) return;
+
+  el.querySelectorAll('[data-nieuw]').forEach((b) => b.addEventListener('click', () => shiftModal({ datum: b.dataset.nieuw }, herlaad)));
+  el.querySelectorAll('[data-shift]').forEach((b) => b.addEventListener('click', () => shiftModal(S.find((s) => s.id === b.dataset.shift), herlaad)));
+  el.querySelectorAll('[data-dienst]').forEach((b) => b.addEventListener('click', () => {
+    const d = D.find((x) => x.id === b.dataset.dienst);
+    const s = d.shift_id && S.find((x) => x.id === d.shift_id);
+    s ? shiftModal(s, herlaad) : dienstModal(d, herlaad);
+  }));
+  el.querySelectorAll('[data-persoon]').forEach((b) => b.addEventListener('click', () => persoonDienstModal(b.dataset.persoon, b.dataset.datum, herlaad)));
+
+  el.querySelector('#print').addEventListener('click', () => window.print());
+  el.querySelector('#csv').addEventListener('click', () => downloadCsv(`rooster-week-${weekNr(state.monday)}.csv`,
+    [['Medewerker', 'Datum', 'Afdeling', 'Start', 'Eind', 'Pauze (min)', 'Uren'],
+      ...D.map((d) => [naamVan(d.medewerker_id), d.datum, AFD[d.afdeling], hhmm(d.start_tijd), hhmm(d.eind_tijd), d.pauze_minuten, fmtUren(minutes(d.start_tijd, d.eind_tijd, d.pauze_minuten))])]));
+
+  el.querySelector('#publiceer').addEventListener('click', () => act(async () => {
+    const n = check(await sb.rpc('rooster_publiceren', { p_van: dagen[0], p_tot: dagen[6], p_afdeling: state.afd || null }));
+    toast(`Gepubliceerd (${n} onderdelen)`); herlaad();
+  }));
+
+  el.querySelector('#kopieer').addEventListener('click', () => act(async () => {
+    const vorige = weekDays(addDays(state.monday, -7));
+    const oud = check(await sb.rpc('shifts_met_bezetting', { p_van: vorige[0], p_tot: vorige[6] })).filter((s) => !state.afd || s.afdeling === state.afd);
+    const sleutel = (s, datum) => [s.afdeling, datum, hhmm(s.start_tijd), hhmm(s.eind_tijd)].join('|');
+    const bestaand = new Set(check(await sb.rpc('shifts_met_bezetting', { p_van: dagen[0], p_tot: dagen[6] })).map((s) => sleutel(s, s.datum)));
+    const nieuw = oud.filter((s) => !bestaand.has(sleutel(s, addDays(s.datum, 7))));
+    if (!nieuw.length) return toast('Er is niets om te kopiëren');
+    if (!confirm(`${nieuw.length} shifts van vorige week kopiëren als concept? Aanmeldingen en toewijzingen worden niet meegenomen.`)) return;
+    check(await sb.from('shifts').insert(nieuw.map((s) => ({
+      afdeling: s.afdeling, datum: addDays(s.datum, 7), start_tijd: s.start_tijd, eind_tijd: s.eind_tijd, pauze_minuten: s.pauze_minuten,
+      plekken: s.plekken, titel: s.titel, opmerking: s.opmerking, gepubliceerd: false, aangemaakt_door: ctx.me.id,
+    }))));
+    toast(`${nieuw.length} shifts gekopieerd`); herlaad();
+  }));
+}
+
+// ---------- modals ----------
+const veldenHtml = (s, medewerkers = false) => `
+  <div class="two">
+    <div><label class="f">Afdeling</label><select id="f-afd">${afdOptions(s.afdeling)}</select></div>
+    <div><label class="f">Datum</label><input type="date" id="f-datum" value="${s.datum ?? ''}"></div>
+  </div>
+  <div class="two">
+    <div><label class="f">Start</label><input type="time" id="f-start" value="${hhmm(s.start_tijd) || '09:00'}"></div>
+    <div><label class="f">Eind</label><input type="time" id="f-eind" value="${hhmm(s.eind_tijd) || '17:00'}"></div>
+  </div>
+  <div class="two">
+    <div><label class="f">Pauze (min)</label><input type="number" id="f-pauze" min="0" max="480" value="${s.pauze_minuten ?? 30}"></div>
+    ${medewerkers ? '' : `<div><label class="f">Aantal plekken</label><input type="number" id="f-plekken" min="1" max="50" value="${s.plekken ?? 1}"></div>`}
+  </div>`;
+
+const leesVelden = (m) => {
+  const v = (id) => m.querySelector(id)?.value;
+  const r = { afdeling: v('#f-afd'), datum: v('#f-datum'), start_tijd: v('#f-start'), eind_tijd: v('#f-eind'), pauze_minuten: +v('#f-pauze') || 0 };
+  if (!r.datum) throw new Error('Kies een datum');
+  if (!r.start_tijd || !r.eind_tijd || r.eind_tijd <= r.start_tijd) throw new Error('De eindtijd moet na de starttijd liggen');
+  return r;
+};
+
+function shiftModal(s, herlaad) {
+  const bestaand = !!s.id;
+  openModal(`<h3>${bestaand ? 'Shift' : 'Nieuwe shift'}</h3>
+    <p class="sub" style="margin:0">${s.datum ? esc(fmtDay(s.datum)) : ''}${bestaand && !s.gepubliceerd ? ' · concept' : ''}</p>
+    ${veldenHtml(s)}
+    <label class="f">Titel (optioneel)</label><input id="f-titel" value="${esc(s.titel ?? '')}">
+    <label class="f">Opmerking (optioneel)</label><input id="f-opm" value="${esc(s.opmerking ?? '')}">
+    ${bestaand ? '<div id="aanm"></div>' : ''}
+    <div class="actions">
+      ${bestaand ? '<button class="btn danger" id="del" style="margin-right:auto">Shift verwijderen</button>' : ''}
+      <button class="btn" data-close>Sluiten</button><button class="btn primary" id="save">Opslaan</button></div>`,
+  (m, close) => {
+    m.querySelector('#save').addEventListener('click', () => act(async () => {
+      const rij = { ...leesVelden(m), plekken: +m.querySelector('#f-plekken').value || 1, titel: m.querySelector('#f-titel').value.trim() || null, opmerking: m.querySelector('#f-opm').value.trim() || null };
+      if (bestaand) {
+        const bezet = s.bezet ?? 0;
+        if (rij.plekken < bezet) throw new Error(`Er zijn al ${bezet} mensen ingepland; zet het aantal plekken niet lager.`);
+        check(await sb.from('shifts').update(rij).eq('id', s.id));
+        check(await sb.from('diensten').update({ afdeling: rij.afdeling, datum: rij.datum, start_tijd: rij.start_tijd, eind_tijd: rij.eind_tijd, pauze_minuten: rij.pauze_minuten }).eq('shift_id', s.id));
+      } else {
+        check(await sb.from('shifts').insert({ ...rij, gepubliceerd: false, aangemaakt_door: ctx.me.id }));
+      }
+      toast('Opgeslagen'); close(); herlaad();
+    }));
+    if (!bestaand) return;
+    m.querySelector('#del').addEventListener('click', () => act(async () => {
+      if (!confirm('Deze shift en alle bijbehorende diensten en aanmeldingen verwijderen?')) return;
+      check(await sb.from('shifts').delete().eq('id', s.id));
+      toast('Shift verwijderd'); close(); herlaad();
+    }));
+    aanmeldingenLijst(m.querySelector('#aanm'), s, () => { close(); herlaad(); });
+  });
+}
+
+async function aanmeldingenLijst(box, s, klaar) {
+  const rijen = check(await sb.from('shift_aanmeldingen').select('*').eq('shift_id', s.id).order('aangemaakt_op'));
+  const goed = rijen.filter((r) => r.status === 'goedgekeurd');
+  const kandidaten = ctx.mw.filter((x) => x.actief && x.afdelingen.includes(s.afdeling) && !goed.some((g) => g.medewerker_id === x.id));
+  const pill = { aangemeld: '<span class="pill orange">Aangemeld</span>', goedgekeurd: '<span class="pill green">Ingepland</span>', afgekeurd: '<span class="pill red">Afgekeurd</span>' };
+  box.innerHTML = `<h2 style="font-size:16px">Bezetting (${goed.length}/${s.plekken})</h2>
+    ${rijen.length ? rijen.map((r) => `<div class="arow"><span class="avatar">${initialen(naamVan(r.medewerker_id))}</span>
+      <span class="grow">${esc(naamVan(r.medewerker_id))}${r.opmerking ? `<br><span class="note">${esc(r.opmerking)}</span>` : ''}</span>${pill[r.status]}
+      ${r.status !== 'goedgekeurd' ? `<button class="btn sm ok" data-oke="${r.id}">Goedkeuren</button>` : ''}
+      ${r.status === 'aangemeld' ? `<button class="btn sm danger" data-nee="${r.id}">Afkeuren</button>` : ''}
+      ${r.status === 'goedgekeurd' ? `<button class="btn sm danger" data-weg="${r.medewerker_id}">Verwijderen</button>` : ''}</div>`).join('')
+      : '<p class="note">Nog niemand aangemeld of ingepland.</p>'}
+    <div class="row" style="margin-top:10px"><select id="toew" class="grow"><option value="">Medewerker toewijzen…</option>
+      ${kandidaten.map((k) => `<option value="${k.id}">${esc(k.naam)}</option>`).join('')}</select>
+      <button class="btn" id="toewbtn">Toewijzen</button></div>`;
+  const doe = (fn, msg) => act(async () => { await fn(); toast(msg); klaar(); });
+  box.querySelectorAll('[data-oke]').forEach((b) => b.addEventListener('click', () => doe(async () => check(await sb.rpc('aanmelding_beoordelen', { p_id: b.dataset.oke, p_goedkeuren: true })), 'Goedgekeurd')));
+  box.querySelectorAll('[data-nee]').forEach((b) => b.addEventListener('click', () => doe(async () => check(await sb.rpc('aanmelding_beoordelen', { p_id: b.dataset.nee, p_goedkeuren: false })), 'Afgekeurd')));
+  box.querySelectorAll('[data-weg]').forEach((b) => b.addEventListener('click', () => doe(async () => check(await sb.rpc('aanmelding_verwijderen', { p_shift_id: s.id, p_medewerker_id: b.dataset.weg })), 'Verwijderd uit shift')));
+  box.querySelector('#toewbtn').addEventListener('click', () => {
+    const id = box.querySelector('#toew').value;
+    if (id) doe(async () => check(await sb.rpc('shift_toewijzen', { p_shift_id: s.id, p_medewerker_id: id })), 'Toegewezen');
+  });
+}
+
+// Eén medewerker een dienst geven: maakt een shift met 1 plek en wijst die meteen toe
+function persoonDienstModal(medewerkerId, datum, herlaad) {
+  const m0 = ctx.mw.find((x) => x.id === medewerkerId);
+  openModal(`<h3>Dienst voor ${esc(m0.naam)}</h3><p class="sub" style="margin:0">${esc(fmtDay(datum))}</p>
+    ${veldenHtml({ datum }, true).replace(/<select id="f-afd">.*?<\/select>/s, `<select id="f-afd">${m0.afdelingen.map((a) => `<option value="${a}">${AFD[a]}</option>`).join('')}</select>`)}
+    <div class="actions"><button class="btn" data-close>Annuleren</button><button class="btn primary" id="save">Toevoegen</button></div>`,
+  (m, close) => m.querySelector('#save').addEventListener('click', () => act(async () => {
+    const rij = leesVelden(m);
+    const nieuw = check(await sb.from('shifts').insert({ ...rij, plekken: 1, gepubliceerd: false, aangemaakt_door: ctx.me.id }).select().single());
+    try { check(await sb.rpc('shift_toewijzen', { p_shift_id: nieuw.id, p_medewerker_id: medewerkerId })); }
+    catch (e) { await sb.from('shifts').delete().eq('id', nieuw.id); throw e; }
+    toast('Dienst toegevoegd (concept tot je publiceert)'); close(); herlaad();
+  })));
+}
+
+// Dienst zonder shift (uit een eerdere versie): alleen verwijderen
+function dienstModal(d, herlaad) {
+  openModal(`<h3>Dienst van ${esc(naamVan(d.medewerker_id))}</h3>
+    <p>${esc(fmtDay(d.datum))}<br>${hhmm(d.start_tijd)} - ${hhmm(d.eind_tijd)} · ${AFD[d.afdeling]}</p>
+    <div class="actions"><button class="btn danger" id="del" style="margin-right:auto">Verwijderen</button><button class="btn" data-close>Sluiten</button></div>`,
+  (m, close) => m.querySelector('#del').addEventListener('click', () => act(async () => {
+    check(await sb.from('diensten').delete().eq('id', d.id)); toast('Verwijderd'); close(); herlaad();
+  })));
+}
+
+return { roosterView };
+})();
+
+const __views_beschikbaarheid_js = (() => {
+const { sb, ctx, isAdmin, esc, act, check, toast, today, mondayOf, addDays, weekDays, DAGEN, fmtDay, fmtShort, weekNr, weekNav, bindWeekNav, hhmm, initialen } = __lib_js;
+
+const state = { monday: mondayOf(today()) };
+
+async function beschikbaarheidView(el) {
+  const dagen = weekDays(state.monday);
+  const rijen = check(await sb.from('beschikbaarheid').select('*').gte('datum', dagen[0]).lte('datum', dagen[6]));
+  const mijn = new Map(rijen.filter((r) => r.medewerker_id === ctx.me.id).map((r) => [r.datum, r]));
+
+  const dagRij = (d, i) => {
+    const r = mijn.get(d); const verleden = d < today();
+    return `<div class="card" data-dag="${d}">
+      <div class="row between"><strong style="text-transform:capitalize">${esc(fmtDay(d))}</strong>
+        <select data-status ${verleden ? 'disabled' : ''}>
+          <option value="">Niet ingevuld</option>
+          <option value="beschikbaar" ${r?.status === 'beschikbaar' ? 'selected' : ''}>Beschikbaar</option>
+          <option value="deels" ${r?.status === 'deels' ? 'selected' : ''}>Deels beschikbaar</option>
+          <option value="niet" ${r?.status === 'niet' ? 'selected' : ''}>Niet beschikbaar</option>
+        </select></div>
+      <div class="row" style="margin-top:8px;${r?.status === 'deels' ? '' : 'display:none'}" data-tijden>
+        <label class="note">Van</label><input type="time" data-van value="${hhmm(r?.van)}">
+        <label class="note">Tot</label><input type="time" data-tot value="${hhmm(r?.tot)}">
+      </div>
+      <input data-opm placeholder="Opmerking (optioneel)" value="${esc(r?.opmerking ?? '')}" style="width:100%;margin-top:8px" ${verleden ? 'disabled' : ''}>
+    </div>`;
+  };
+
+  el.innerHTML = `<div class="wrap narrow">
+    <div class="crumbs"><a href="#/">Dashboard</a> › Beschikbaarheid</div>
+    <div class="row between"><div><h1>Beschikbaarheid <span class="pill">Week ${weekNr(state.monday)}</span></h1>
+      <p class="sub">Geef per dag aan wanneer je kunt werken. Wijzigingen worden direct opgeslagen.</p></div>${weekNav(state.monday)}</div>
+    <div class="row hide-print" style="margin-bottom:12px">
+      <button class="btn sm" data-bulk="beschikbaar">Hele week beschikbaar</button>
+      <button class="btn sm" data-bulk="niet">Hele week niet beschikbaar</button>
+      <button class="btn sm" data-bulk="">Wissen</button></div>
+    ${dagen.map(dagRij).join('')}
+    ${isAdmin() ? '<div id="team"></div>' : ''}
+  </div>`;
+
+  bindWeekNav(el, state, () => beschikbaarheidView(el));
+
+  const opslaan = (card) => act(async () => {
+    const datum = card.dataset.dag;
+    const status = card.querySelector('[data-status]').value;
+    card.querySelector('[data-tijden]').style.display = status === 'deels' ? '' : 'none';
+    if (!status) {
+      check(await sb.from('beschikbaarheid').delete().eq('medewerker_id', ctx.me.id).eq('datum', datum));
+      return;
+    }
+    const van = card.querySelector('[data-van]').value, tot = card.querySelector('[data-tot]').value;
+    if (status === 'deels' && (!van || !tot)) return; // wacht tot beide tijden zijn ingevuld
+    if (status === 'deels' && tot <= van) throw new Error('De eindtijd moet na de starttijd liggen');
+    check(await sb.from('beschikbaarheid').upsert({
+      medewerker_id: ctx.me.id, datum, status,
+      van: status === 'deels' ? van : null, tot: status === 'deels' ? tot : null,
+      opmerking: card.querySelector('[data-opm]').value.trim() || null, bijgewerkt_op: new Date().toISOString(),
+    }, { onConflict: 'medewerker_id,datum' }));
+    toast('Opgeslagen');
+  });
+  el.querySelectorAll('[data-dag]').forEach((card) => card.querySelectorAll('select,input').forEach((i) => i.addEventListener('change', () => opslaan(card))));
+
+  el.querySelectorAll('[data-bulk]').forEach((b) => b.addEventListener('click', () => act(async () => {
+    const komend = dagen.filter((d) => d >= today());
+    if (!b.dataset.bulk) check(await sb.from('beschikbaarheid').delete().eq('medewerker_id', ctx.me.id).in('datum', komend));
+    else check(await sb.from('beschikbaarheid').upsert(komend.map((datum) => ({ medewerker_id: ctx.me.id, datum, status: b.dataset.bulk })), { onConflict: 'medewerker_id,datum' }));
+    beschikbaarheidView(el);
+  })));
+
+  if (isAdmin()) teamOverzicht(el.querySelector('#team'), dagen, rijen);
+}
+
+function teamOverzicht(box, dagen, rijen) {
+  const mensen = ctx.mw.filter((m) => m.actief);
+  const cel = (m, d) => {
+    const r = rijen.find((x) => x.medewerker_id === m.id && x.datum === d);
+    if (!r) return '';
+    const tekst = r.status === 'niet' ? '✕' : r.status === 'deels' ? `${hhmm(r.van)} – ${hhmm(r.tot)}` : 'Beschikbaar';
+    return `<div class="avail ${r.status}" title="${esc(r.opmerking ?? '')}">${tekst}</div>`;
+  };
+  box.innerHTML = `<h2>Overzicht team</h2><div class="gridwrap"><table class="grid">
+    <thead><tr><th class="name"></th>${dagen.map((d, i) => `<th class="${d === today() ? 'today' : ''}">${DAGEN[i]} ${+d.slice(8)}</th>`).join('')}</tr></thead>
+    <tbody>${mensen.map((m) => {
+      const n = rijen.filter((r) => r.medewerker_id === m.id && r.status !== 'niet').length;
+      return `<tr><td class="name"><div class="person"><span class="avatar">${initialen(m.naam)}</span><div>${esc(m.naam)}<small>${n}/7 dagen</small></div></div></td>
+      ${dagen.map((d) => `<td class="${d === today() ? 'today' : ''}">${cel(m, d)}</td>`).join('')}</tr>`;
+    }).join('')}</tbody></table></div>`;
+}
+
+return { beschikbaarheidView };
+})();
+
+const __views_uren_js = (() => {
+const { sb, ctx, isAdmin, esc, act, check, toast, today, mondayOf, addDays, weekDays, fmtDay, fmtUren, tsMinutes, tsTime, tsTimeSec, amsToISO, weekNr, weekNav, bindWeekNav, openModal, naamVan, initialen, AFD, afdOptions, mijnAfdelingen, downloadCsv, fmtShort, } = __lib_js;
+
+const state = { monday: mondayOf(today()), afd: '', tab: 'alle' };
+
+const urenView = (el) => (isAdmin() ? beheerUren(el) : eigenUren(el));
+
+const statusPill = (r) => {
+  if (!r.uit_tijd) return '<span class="pill blue">Ingeklokt</span>';
+  if (r.status === 'goedgekeurd') return '<span class="pill green">Goedgekeurd</span>';
+  if (r.status === 'afgekeurd') return '<span class="pill red">Afgekeurd</span>';
+  return '<span class="pill orange">Beoordelen</span>';
+};
+
+// ====================== beheerder: uren beoordelen ======================
+async function beheerUren(el) {
+  const dagen = weekDays(state.monday);
+  const alle = check(await sb.from('kloktijden').select('*').gte('datum', dagen[0]).lte('datum', dagen[6]).order('in_tijd'));
+  const rijen = alle.filter((r) => (!state.afd || r.afdeling === state.afd)
+    && (state.tab === 'alle' || (state.tab === 'open' ? r.status === 'te_beoordelen' : r.status !== 'te_beoordelen')));
+  const nogTeDoen = alle.filter((r) => r.status === 'te_beoordelen' && r.uit_tijd && (!state.afd || r.afdeling === state.afd));
+
+  const rij = (r) => `<tr data-id="${r.id}">
+    <td><div class="person"><span class="avatar">${initialen(naamVan(r.medewerker_id))}</span><div>${esc(naamVan(r.medewerker_id))}
+      <div class="ingest ${r.bron === 'klok' ? 'ok' : ''}">${r.bron === 'klok' ? 'Ingeklokt' : 'Uren ingestuurd'}${r.afdeling ? ' · ' + AFD[r.afdeling] : ''}</div></div></div></td>
+    <td><input type="time" data-f="in" value="${tsTime(r.in_tijd)}">${r.gecorrigeerd_op ? `<div class="note">Exact: ${tsTimeSec(r.in_oorspronkelijk ?? r.in_tijd)}</div>` : ''}</td>
+    <td>${r.uit_tijd ? `<input type="time" data-f="uit" value="${tsTime(r.uit_tijd)}">${r.gecorrigeerd_op ? `<div class="note">Exact: ${tsTimeSec(r.uit_oorspronkelijk ?? r.uit_tijd)}</div>` : ''}` : '<span class="note">nog ingeklokt</span>'}</td>
+    <td><input type="number" min="0" max="480" data-f="pauze" value="${r.pauze_minuten}" style="width:70px"> min</td>
+    <td>${r.uit_tijd ? fmtUren(tsMinutes(r)) + ' uur' : '—'}</td>
+    <td>${statusPill(r)}${r.beoordeel_opmerking ? `<div class="note">${esc(r.beoordeel_opmerking)}</div>` : ''}</td>
+    <td style="white-space:nowrap">${r.uit_tijd ? (r.status === 'goedgekeurd'
+      ? '<button class="btn sm" data-reset>Terugzetten</button>'
+      : '<button class="btn sm ok" data-ok>✓</button> <button class="btn sm danger" data-nee>✕</button>') : ''}</td></tr>`;
+
+  const dagBlok = (d) => {
+    const lijst = rijen.filter((r) => r.datum === d);
+    const goed = lijst.filter((r) => r.status === 'goedgekeurd').reduce((n, r) => n + tsMinutes(r), 0);
+    return `<div class="daybox"><div class="dayhead"><div><b style="text-transform:capitalize">${esc(fmtDay(d).split(' ')[0])}</b> ${d.split('-').reverse().join('-')}</div>
+      <button class="btn sm hide-print" data-add="${d}">+ Uren toevoegen</button></div>
+      <div class="body">${lijst.length ? `<table class="tbl"><thead><tr><th>Medewerker</th><th>Start</th><th>Einde</th><th>Pauze</th><th>Uur</th><th>Status</th><th></th></tr></thead>
+        <tbody>${lijst.map(rij).join('')}</tbody></table><div style="text-align:right;padding:6px 8px"><b>Goedgekeurd: ${fmtUren(goed)} uur</b></div>`
+        : '<div class="empty">Deze dag bevat nog geen uren</div>'}</div></div>`;
+  };
+
+  el.innerHTML = `<div class="wrap wide" style="max-width:1100px">
+    <div class="crumbs hide-print"><a href="#/">Dashboard</a> › Urenregistratie</div>
+    <h1>Urenregistratie</h1><p class="sub">Week ${weekNr(state.monday)}</p>
+    <div class="row between hide-print" style="margin-bottom:16px">
+      <div class="tabs"><button data-tab="alle" class="${state.tab === 'alle' ? 'on' : ''}">Alle</button>
+        <button data-tab="open" class="${state.tab === 'open' ? 'on' : ''}">Nog beoordelen (${nogTeDoen.length})</button>
+        <button data-tab="klaar" class="${state.tab === 'klaar' ? 'on' : ''}">Beoordeeld</button></div>
+      <div class="row"><select id="afd">${afdOptions(state.afd, true)}</select>${weekNav(state.monday)}
+        <button class="btn primary" id="alles" ${nogTeDoen.length ? '' : 'disabled'}>Alles goedkeuren</button>
+        <button class="btn" id="csv">Exporteren</button></div></div>
+    ${dagen.map(dagBlok).join('')}</div>`;
+
+  const herlaad = () => beheerUren(el);
+  bindWeekNav(el, state, herlaad);
+  el.querySelector('#afd').addEventListener('change', (e) => { state.afd = e.target.value; herlaad(); });
+  el.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => { state.tab = b.dataset.tab; herlaad(); }));
+  el.querySelectorAll('[data-add]').forEach((b) => b.addEventListener('click', () => urenToevoegenModal(b.dataset.add, herlaad)));
+
+  const beoordeel = (id, status, opm) => act(async () => { check(await sb.rpc('uren_beoordelen', { p_id: id, p_status: status, p_opmerking: opm ?? null })); herlaad(); });
+  el.querySelectorAll('tr[data-id]').forEach((tr) => {
+    const id = tr.dataset.id;
+    tr.querySelector('[data-ok]')?.addEventListener('click', () => beoordeel(id, 'goedgekeurd'));
+    tr.querySelector('[data-nee]')?.addEventListener('click', () => { const opm = prompt('Reden van afkeuren (optioneel):'); if (opm !== null) beoordeel(id, 'afgekeurd', opm); });
+    tr.querySelector('[data-reset]')?.addEventListener('click', () => beoordeel(id, 'te_beoordelen'));
+    // tijden/pauze aanpassen: alleen opslaan als er iets verandert
+    tr.querySelectorAll('input').forEach((inp) => inp.addEventListener('change', () => act(async () => {
+      const r = alle.find((x) => x.id === id);
+      const inT = tr.querySelector('[data-f=in]').value, uitEl = tr.querySelector('[data-f=uit]');
+      const pauze = +tr.querySelector('[data-f=pauze]').value || 0;
+      if (!inT) throw new Error('Vul een starttijd in');
+      const upd = { in_tijd: amsToISO(r.datum, inT), pauze_minuten: pauze };
+      if (uitEl) {
+        if (!uitEl.value) throw new Error('Vul een eindtijd in');
+        upd.uit_tijd = amsToISO(r.datum, uitEl.value);
+        if (new Date(upd.uit_tijd) <= new Date(upd.in_tijd)) throw new Error('De eindtijd moet na de starttijd liggen');
+      }
+      if (inT === tsTime(r.in_tijd) && (!uitEl || uitEl.value === tsTime(r.uit_tijd)) && pauze === r.pauze_minuten) return;
+      upd.in_oorspronkelijk = r.in_oorspronkelijk ?? r.in_tijd;
+      upd.uit_oorspronkelijk = r.uit_oorspronkelijk ?? r.uit_tijd;
+      check(await sb.from('kloktijden').update(upd).eq('id', id));
+      toast('Tijden aangepast'); herlaad();
+    })));
+  });
+
+  el.querySelector('#alles').addEventListener('click', () => act(async () => {
+    if (!confirm(`${nogTeDoen.length} registraties goedkeuren?`)) return;
+    for (const r of nogTeDoen) check(await sb.rpc('uren_beoordelen', { p_id: r.id, p_status: 'goedgekeurd', p_opmerking: null }));
+    toast('Alles goedgekeurd'); herlaad();
+  }));
+  el.querySelector('#csv').addEventListener('click', () => downloadCsv(`uren-week-${weekNr(state.monday)}.csv`,
+    [['Medewerker', 'Datum', 'Afdeling', 'Start', 'Einde', 'Pauze (min)', 'Uren', 'Status'],
+      ...alle.filter((r) => !state.afd || r.afdeling === state.afd).map((r) => [naamVan(r.medewerker_id), r.datum, AFD[r.afdeling] ?? '', tsTime(r.in_tijd), tsTime(r.uit_tijd), r.pauze_minuten, fmtUren(tsMinutes(r)), r.status])]));
+}
+
+function urenToevoegenModal(datum, herlaad) {
+  const mensen = ctx.mw.filter((m) => m.actief);
+  openModal(`<h3>Uren toevoegen</h3><p class="sub" style="margin:0">${esc(fmtDay(datum))}</p>
+    <label class="f">Medewerker</label><select id="f-mw">${mensen.map((m) => `<option value="${m.id}">${esc(m.naam)}</option>`).join('')}</select>
+    <label class="f">Afdeling</label><select id="f-afd">${afdOptions('')}</select>
+    <div class="two"><div><label class="f">Start</label><input type="time" id="f-start" value="09:00"></div>
+      <div><label class="f">Einde</label><input type="time" id="f-eind" value="17:00"></div></div>
+    <label class="f">Pauze (min)</label><input type="number" id="f-pauze" min="0" max="480" value="30">
+    <div class="actions"><button class="btn" data-close>Annuleren</button><button class="btn primary" id="save">Toevoegen</button></div>`,
+  (m, close) => m.querySelector('#save').addEventListener('click', () => act(async () => {
+    const v = (id) => m.querySelector(id).value;
+    if (v('#f-eind') <= v('#f-start')) throw new Error('De eindtijd moet na de starttijd liggen');
+    check(await sb.from('kloktijden').insert({
+      medewerker_id: v('#f-mw'), datum, afdeling: v('#f-afd'), in_tijd: amsToISO(datum, v('#f-start')), uit_tijd: amsToISO(datum, v('#f-eind')),
+      pauze_minuten: +v('#f-pauze') || 0, bron: 'handmatig', status: 'goedgekeurd', beoordeeld_door: ctx.me.id, beoordeeld_op: new Date().toISOString(),
+    }));
+    toast('Uren toegevoegd'); close(); herlaad();
+  })));
+}
+
+// ====================== medewerker: eigen uren ======================
+async function eigenUren(el) {
+  const vanaf = addDays(today(), -21);
+  const rijen = check(await sb.from('kloktijden').select('*').eq('medewerker_id', ctx.me.id).gte('datum', vanaf).order('in_tijd', { ascending: false }));
+  const totaal = rijen.filter((r) => r.status === 'goedgekeurd').reduce((n, r) => n + tsMinutes(r), 0);
+
+  el.innerHTML = `<div class="wrap narrow">
+    <div class="crumbs"><a href="#/">Dashboard</a> › Mijn uren</div>
+    <div class="row between"><div><h1>Mijn uren</h1><p class="sub">De afgelopen drie weken. Een beheerder beoordeelt je uren.</p></div>
+      <button class="btn primary" id="nieuw">Uren indienen</button></div>
+    <p class="note">Goedgekeurd in deze periode: <b>${fmtUren(totaal)} uur</b></p>
+    ${rijen.length ? rijen.map((r) => {
+      const vast = r.status === 'goedgekeurd';
+      return `<div class="card" data-id="${r.id}"><div class="row between"><b style="text-transform:capitalize">${esc(fmtDay(r.datum))}</b>${statusPill(r)}</div>
+        <div class="row" style="margin-top:8px"><span class="pill">${AFD[r.afdeling] ?? ''}</span>
+          <input type="time" data-f="in" value="${tsTime(r.in_tijd)}" ${vast ? 'disabled' : ''}> –
+          ${r.uit_tijd ? `<input type="time" data-f="uit" value="${tsTime(r.uit_tijd)}" ${vast ? 'disabled' : ''}>` : '<span class="note">nog ingeklokt</span>'}
+          <input type="number" data-f="pauze" min="0" max="480" value="${r.pauze_minuten}" style="width:70px" ${vast || !r.uit_tijd ? 'disabled' : ''}> min pauze
+          <span class="grow"></span><b>${r.uit_tijd ? fmtUren(tsMinutes(r)) + ' uur' : ''}</b></div>
+        ${r.status === 'afgekeurd' ? `<p class="err-text" style="margin:8px 0 0">Afgekeurd${r.beoordeel_opmerking ? ': ' + esc(r.beoordeel_opmerking) : ''}. Pas je tijden aan om ze opnieuw in te sturen.</p>` : ''}
+      </div>`;
+    }).join('') : '<div class="card empty">Nog geen uren geregistreerd.</div>'}</div>`;
+
+  el.querySelectorAll('[data-id]').forEach((card) => card.querySelectorAll('input:not([disabled])').forEach((i) => i.addEventListener('change', () => act(async () => {
+    const r = rijen.find((x) => x.id === card.dataset.id);
+    const uit = card.querySelector('[data-f=uit]')?.value || null;
+    check(await sb.rpc('eigen_uren_aanpassen', { p_id: r.id, p_in: card.querySelector('[data-f=in]').value, p_uit: uit, p_pauze: +card.querySelector('[data-f=pauze]').value || 0 }));
+    toast('Uren aangepast'); eigenUren(el);
+    return true;
+  }).then((ok) => { if (!ok) eigenUren(el); }))));
+
+  el.querySelector('#nieuw').addEventListener('click', () => {
+    openModal(`<h3>Uren indienen</h3><p class="sub" style="margin:0">Vergeten in te klokken? Vul hier je uren in (maximaal 14 dagen terug).</p>
+      <label class="f">Datum</label><input type="date" id="f-datum" value="${today()}" min="${addDays(today(), -14)}" max="${today()}">
+      <label class="f">Afdeling</label><select id="f-afd">${afdOptions('')}</select>
+      <div class="two"><div><label class="f">Start</label><input type="time" id="f-start" value="09:00"></div>
+        <div><label class="f">Einde</label><input type="time" id="f-eind" value="17:00"></div></div>
+      <label class="f">Pauze (min)</label><input type="number" id="f-pauze" min="0" max="480" value="30">
+      <div class="actions"><button class="btn" data-close>Annuleren</button><button class="btn primary" id="save">Indienen</button></div>`,
+    (m, close) => m.querySelector('#save').addEventListener('click', () => act(async () => {
+      const v = (id) => m.querySelector(id).value;
+      check(await sb.rpc('uren_indienen', { p_datum: v('#f-datum'), p_afdeling: v('#f-afd'), p_start: v('#f-start'), p_eind: v('#f-eind'), p_pauze: +v('#f-pauze') || 0, p_dienst_id: null }));
+      toast('Uren ingediend'); close(); eigenUren(el);
+    })));
+  });
+}
+
+return { urenView };
+})();
+
+const __app_js = (() => {
+const { sb, ctx, isAdmin, esc, act, check, toast, today, fmtDay, hhmm, tsTime, AFD, AFD_LANG, naamVan, initialen, afdOptions, mijnAfdelingen } = __lib_js;
+const { LOGIN_EMAIL } = __config_js;
+const { openShiftsView } = __views_open_js;
+const { roosterView } = __views_rooster_js;
+const { beschikbaarheidView } = __views_beschikbaarheid_js;
+const { urenView } = __views_uren_js;
+
+const app = document.getElementById('app');
+
+const ROUTES = {
+  '': { titel: 'Home', view: homeView },
+  open: { titel: 'Open shifts', view: openShiftsView },
+  rooster: { titel: 'Rooster', view: roosterView },
+  beschikbaarheid: { titel: 'Beschikbaarheid', view: beschikbaarheidView },
+  uren: { titel: 'Uren', view: urenView },
+};
+const routeKey = () => location.hash.replace(/^#\/?/, '').split('?')[0];
+
+// ---------- inloggen ----------
+function loginView(melding = '') {
+  app.innerHTML = `
+    <form class="card login" id="login">
+      <h1 style="font-size:22px">Graan &amp; Zo planning</h1>
+      <p class="sub">Log in met je gebruikersnaam.</p>
+      <label class="f" for="u">Gebruikersnaam of e-mailadres</label>
+      <input id="u" autocomplete="username" autocapitalize="none" required>
+      <label class="f" for="p">Wachtwoord</label>
+      <input id="p" type="password" autocomplete="current-password" required>
+      <button class="btn primary" style="width:100%;margin-top:16px">Inloggen</button>
+      <div class="err-text" id="err">${esc(melding)}</div>
+    </form>`;
+  document.getElementById('login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const naam = document.getElementById('u').value.trim();
+    const email = naam.includes('@') ? naam : LOGIN_EMAIL(naam.toLowerCase());
+    const { error } = await sb.auth.signInWithPassword({ email, password: document.getElementById('p').value });
+    if (error) document.getElementById('err').textContent = 'Inloggen mislukt. Controleer je gebruikersnaam en wachtwoord.';
+    else start();
+  });
+}
+
+async function laadProfiel() {
+  const { data } = await sb.auth.getSession();
+  ctx.session = data.session;
+  if (!ctx.session) return false;
+  const mw = check(await sb.from('medewerkers').select('id,user_id,naam,gebruikersnaam,rol,afdelingen,actief').order('naam'));
+  ctx.mw = mw;
+  ctx.me = mw.find((m) => m.user_id === ctx.session.user.id && m.actief) ?? null;
+  return true;
+}
+
+async function start() {
+  try {
+    if (!(await laadProfiel())) return loginView();
+    if (!ctx.me) {
+      await sb.auth.signOut();
+      return loginView('Dit account heeft geen actief medewerkersprofiel.');
+    }
+    render();
+  } catch (e) { console.error(e); loginView('Er ging iets mis: ' + e.message); }
+}
+
+// ---------- layout ----------
+async function render() {
+  const key = routeKey();
+  const route = ROUTES[key] ?? ROUTES[''];
+  const nav = Object.entries(ROUTES).map(([k, r]) => {
+    const titel = k === 'rooster' && isAdmin() ? 'Rooster maken' : k === 'uren' && isAdmin() ? 'Urenregistratie' : r.titel;
+    return `<a href="#/${k}" class="${k === (ROUTES[key] ? key : '') ? 'on' : ''}">${titel}</a>`;
+  }).join('');
+  app.innerHTML = `
+    <header class="topbar hide-print"><div class="in">
+      <span class="brand">Graan &amp; Zo</span>
+      <nav>${nav}</nav>
+      <span class="who">${esc(ctx.me.naam)}${isAdmin() ? ' · beheerder' : ''}</span>
+      <button class="btn sm" id="uit">Uitloggen</button>
+    </div></header>
+    <main id="view"></main>`;
+  document.getElementById('uit').addEventListener('click', async () => { await sb.auth.signOut(); ctx.me = null; loginView(); });
+  const view = document.getElementById('view');
+  view.innerHTML = '<div class="wrap"><p class="sub">Laden…</p></div>';
+  await act(() => route.view(view));
+}
+
+// ---------- home ----------
+async function homeView(el) {
+  const vandaag = today();
+  const [open, diensten, aanwezig, aanm, uren] = await Promise.all([
+    sb.from('kloktijden').select('*').eq('medewerker_id', ctx.me.id).is('uit_tijd', null).eq('datum', vandaag).maybeSingle(),
+    sb.from('diensten').select('*').gte('datum', vandaag).order('datum').order('start_tijd'),
+    sb.rpc('aanwezig_vandaag'),
+    isAdmin() ? sb.from('shift_aanmeldingen').select('id', { count: 'exact', head: true }).eq('status', 'aangemeld') : { count: 0 },
+    isAdmin() ? sb.from('kloktijden').select('id', { count: 'exact', head: true }).eq('status', 'te_beoordelen').not('uit_tijd', 'is', null) : { count: 0 },
+  ]);
+  const klok = check(open); const alle = check(diensten); const aw = check(aanwezig) ?? [];
+  const mijn = alle.filter((d) => d.medewerker_id === ctx.me.id).slice(0, 8);
+  const vandaagDiensten = alle.filter((d) => d.datum === vandaag);
+  const ingeklokt = new Set(aw.filter((a) => a.ingeklokt).map((a) => a.medewerker_id));
+  const eigenVandaag = mijn.find((d) => d.datum === vandaag);
+
+  const klokKaart = klok
+    ? `<div class="clock"><div><div class="sub" style="margin:0">Je bent ingeklokt${klok.afdeling ? ' · ' + AFD[klok.afdeling] : ''}</div>
+         <div class="big">Sinds ${tsTime(klok.in_tijd)}</div></div>
+         <div class="row"><label class="note" for="pauze">Pauze (min)</label><input id="pauze" type="number" min="0" max="480" value="0" style="width:80px">
+         <button class="btn primary" id="uitklokken">Uitklokken</button></div></div>`
+    : `<div class="clock"><div><div class="sub" style="margin:0">Je bent niet ingeklokt</div>
+         <div class="big">${eigenVandaag ? `Vandaag ${hhmm(eigenVandaag.start_tijd)} - ${hhmm(eigenVandaag.eind_tijd)}` : 'Geen dienst vandaag'}</div></div>
+         <div class="row"><select id="klokafd">${afdOptions(eigenVandaag?.afdeling)}</select>
+         <button class="btn primary" id="inklokken">Inklokken</button></div></div>`;
+
+  const perAfd = Object.keys(AFD).map((a) => {
+    const rijen = vandaagDiensten.filter((d) => d.afdeling === a);
+    if (!rijen.length) return '';
+    return `<div class="card"><strong>${AFD_LANG[a]}</strong>${rijen.map((d) => `
+      <div class="arow"><span class="avatar">${initialen(naamVan(d.medewerker_id))}</span>
+      <span class="grow">${esc(naamVan(d.medewerker_id))}<br><span class="note">${hhmm(d.start_tijd)} - ${hhmm(d.eind_tijd)}</span></span>
+      ${ingeklokt.has(d.medewerker_id) ? '<span class="pill green">Aanwezig</span>' : ''}</div>`).join('')}</div>`;
+  }).join('');
+
+  el.innerHTML = `<div class="wrap narrow">
+    <h1>Hoi ${esc(ctx.me.naam.split(' ')[0])}</h1><p class="sub">${esc(fmtDay(vandaag))}</p>
+    <div class="card">${klokKaart}</div>
+    ${isAdmin() ? `<h2>Te beoordelen</h2><div class="tiles">
+      <a class="tile" href="#/rooster"><div class="card"><div class="sub" style="margin:0">Aanmeldingen op shifts</div><div class="big" style="font-size:28px;font-weight:700">${aanm.count ?? 0}</div></div></a>
+      <a class="tile" href="#/uren"><div class="card"><div class="sub" style="margin:0">Uren om te beoordelen</div><div class="big" style="font-size:28px;font-weight:700">${uren.count ?? 0}</div></div></a>
+    </div>` : ''}
+    <h2>Mijn komende diensten</h2>
+    ${mijn.length ? mijn.map((d) => `<div class="card shift"><div><div class="time">${hhmm(d.start_tijd)} - ${hhmm(d.eind_tijd)}</div>
+      <div class="meta"><span>${esc(fmtDay(d.datum))}</span><span class="pill">${AFD[d.afdeling]}</span></div></div></div>`).join('')
+      : `<div class="card empty">Je hebt nog geen diensten. <a href="#/open">Bekijk open shifts</a>.</div>`}
+    <h2>Vandaag aan het werk</h2>
+    ${perAfd || '<div class="card empty">Niemand is vandaag ingepland.</div>'}
+  </div>`;
+
+  el.querySelector('#inklokken')?.addEventListener('click', () => act(async () => {
+    check(await sb.rpc('inklokken', { p_afdeling: el.querySelector('#klokafd').value || null }));
+    toast('Ingeklokt'); homeView(el);
+  }));
+  el.querySelector('#uitklokken')?.addEventListener('click', () => act(async () => {
+    check(await sb.rpc('uitklokken', { p_pauze: +el.querySelector('#pauze').value || 0 }));
+    toast('Uitgeklokt'); homeView(el);
+  }));
+}
+
+window.addEventListener('hashchange', () => ctx.me && render());
+sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') { ctx.me = null; } });
+start();
+
+return {  };
+})();
+</script>
+</body>
+</html>
